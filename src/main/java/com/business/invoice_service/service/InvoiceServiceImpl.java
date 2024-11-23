@@ -1,16 +1,27 @@
 package com.business.invoice_service.service;
 
+import com.business.invoice_service.dto.BookingTableDTO;
 import com.business.invoice_service.dto.InvoiceResponseDTO;
 import com.business.invoice_service.dto.UpdateBillDateRequest;
 import com.business.invoice_service.entity.Invoice;
+
 import com.business.invoice_service.exception.ResourceNotFoundException;
 import com.business.invoice_service.repository.InvoiceRepo;
+
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +31,26 @@ import java.util.stream.Collectors;
 public class InvoiceServiceImpl implements InvoiceService{
     @Autowired
     private InvoiceRepo invoiceRepo;
+
+//    @Autowired
+//    private InvoiceTableRepo invoiceTableRepo;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${tablePlayServiceUrl}") // URL của TablePlay Service
+    private String tablePlayServiceUrl;
+
+    @Value("${bookingServiceUrl}") // URL của TablePlay Service
+    private String bookingServiceUrl;
+
+//    public InvoiceServiceImpl(InvoiceRepo invoiceRepo, InvoiceTableRepo invoiceTableRepo, RestTemplate restTemplate, @Value("${tablePlayServiceUrl}") String tablePlayServiceUrl, @Value("${bookingServiceUrl}") String bookingServiceUrl) {
+//        this.invoiceRepo = invoiceRepo;
+//        this.invoiceTableRepo = invoiceTableRepo;
+//        this.restTemplate = restTemplate;
+//        this.tablePlayServiceUrl = tablePlayServiceUrl;
+//        this.bookingServiceUrl = bookingServiceUrl;
+//    }
 
     public Invoice saveInvoice(Invoice invoice) {
         return invoiceRepo.save(invoice);
@@ -33,6 +64,7 @@ public class InvoiceServiceImpl implements InvoiceService{
 //        return invoiceRepo.save(invoice);
 //    }
 
+    //hiển thị ds hóa đơn
     public List<InvoiceResponseDTO> getAllInvoices() {
         List<Invoice> invoices = invoiceRepo.findAll();
         return invoices.stream().map(invoice -> {
@@ -44,11 +76,13 @@ public class InvoiceServiceImpl implements InvoiceService{
             dto.setTotalMoney(invoice.getTotalMoney());
             dto.setStatus(invoice.getStatus());
             dto.setBookingId(invoice.getBookingId());
+            dto.setTableId(invoice.getTableId());
 
             return dto;
         }).collect(Collectors.toList());
     }
 
+    //cập nhật endTime
     public Invoice updateEndTimeByBookingId(Integer bookingId, LocalDateTime endTime) {
         Invoice invoice = invoiceRepo.findByBookingId(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Invoice not found for bookingId: " + bookingId));
@@ -56,18 +90,99 @@ public class InvoiceServiceImpl implements InvoiceService{
         return invoiceRepo.save(invoice);
     }
 
-    public Invoice updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update) {
-        Invoice invoice = invoiceRepo.findByBookingId(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Invoice not found for bookingId: " + bookingId));
+    //cập nhật hóa đơn (billDate, totalMoney) theo bàn
+//    public Invoice updateInvoiceByTableId(Integer tableId, UpdateBillDateRequest request) {
+//        // Tìm hóa đơn liên quan đến tableId
+//        Invoice invoice = invoiceRepo.findByTableId(tableId)
+//                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hóa đơn cho bàn ID: " + tableId));
+//
+//        // Nếu hóa đơn đã thanh toán, không cho phép thay đổi tổng tiền
+//        if (invoice.getStatus().equals("Đã Thanh Toán")) {
+//            // Không cho phép thay đổi tổng tiền của hóa đơn đã thanh toán
+//            if (request.getTotalMoney() != null && request.getTotalMoney() != invoice.getTotalMoney()) {
+//                throw new IllegalStateException("Không thể thay đổi tổng tiền của hóa đơn đã thanh toán.");
+//            }
+//
+//            // Cập nhật các trường khác (nếu cần thiết, ví dụ: billDate)
+//            invoice.setBillDate(request.getBillDate());
+//        } else if (invoice.getStatus().equals("Chưa Thanh Toán")) {
+//            // Nếu hóa đơn chưa thanh toán, có thể cập nhật toàn bộ các thông tin
+//            invoice.setTotalMoney(request.getTotalMoney());
+//            invoice.setBillDate(request.getBillDate());
+//            invoice.setStatus(request.getStatus());
+//        }
+//
+//        // Lưu lại hóa đơn vào database
+//        return invoiceRepo.save(invoice);
+//    }
 
-        // Cập nhật các thông tin cần thiết
-        invoice.setTotalMoney(update.getTotalMoney());
-        invoice.setBillDate(update.getBillDate()); // Cập nhật ngày lập hóa đơn
-        invoice.setStatus(update.getStatus());
 
+    public Invoice updateInvoiceByTableId(Integer tableId, UpdateBillDateRequest request) {
+        // Chỉ lấy hóa đơn chưa thanh toán hoặc hóa đơn mới nhất
+        Invoice invoice = invoiceRepo.findTopByTableIdAndStatusOrderByBillDateDesc(tableId, "Chưa Thanh Toán")
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hóa đơn cho bàn ID: " + tableId));
+        // Cập nhật thông tin hóa đơn
+        invoice.setTotalMoney(request.getTotalMoney());
+        invoice.setBillDate(request.getBillDate());
+        invoice.setStatus(request.getStatus());
+
+        // Lưu lại hóa đơn vào database
         return invoiceRepo.save(invoice);
     }
 
+//    public Invoice updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update) {
+//        Invoice invoice = invoiceRepo.findByBookingId(bookingId)
+//                .orElseThrow(() -> new EntityNotFoundException("Invoice not found for bookingId: " + bookingId));
+//
+//        // Cập nhật các thông tin cần thiết
+//        invoice.setTotalMoney(update.getTotalMoney());
+//        invoice.setBillDate(update.getBillDate()); // Cập nhật ngày lập hóa đơn
+//        invoice.setStatus(update.getStatus());
+//
+//        return invoiceRepo.save(invoice);
+//    }
+
+//    public Invoice updateInvoiceTotalMoney(Integer tableId, UpdateBillDateRequest update) {
+//        // Lấy hóa đơn dựa trên tableId từ bảng InvoiceTable
+//        InvoiceTable invoiceTable = invoiceTableRepo.findByTableId(tableId)
+//                .orElseThrow(() -> new EntityNotFoundException("Invoice not found for tableId: " + tableId));
+//
+//        Invoice invoice = invoiceTable.getInvoice(); // Lấy thông tin hóa đơn từ InvoiceTable
+//
+//        // Cập nhật các thông tin cần thiết
+//        invoice.setTotalMoney(update.getTotalMoney());
+//        invoice.setBillDate(update.getBillDate()); // Cập nhật ngày lập hóa đơn
+//        invoice.setStatus(update.getStatus());
+//
+//        return invoiceRepo.save(invoice);
+//    }
+
+
+
+
+
+//    public Invoice updateInvoiceTotalMoneyForTable(Integer bookingId, Integer tableId, UpdateBillDateRequest update) {
+//        // Tìm InvoiceTable dựa trên bookingId và tableId
+//        Optional<InvoiceTable> invoiceTableOptional = invoiceTableRepo.findByBookingIdAndTableId(bookingId, tableId);
+//
+//        if (!invoiceTableOptional.isPresent()) {
+//            throw new EntityNotFoundException("Không tìm thấy hóa đơn cho bàn với bookingId: " + bookingId + " và tableId: " + tableId);
+//        }
+//
+//        // Lấy hóa đơn từ liên kết bảng InvoiceTable
+//        InvoiceTable invoiceTable = invoiceTableOptional.get();
+//        Invoice invoice = invoiceTable.getInvoice();
+//
+//        // Cập nhật các thông tin cần thiết
+//        invoice.setTotalMoney(update.getTotalMoney());
+//        invoice.setBillDate(update.getBillDate());
+//        invoice.setStatus(update.getStatus());
+//
+//        // Lưu lại hóa đơn đã cập nhật
+//        return invoiceRepo.save(invoice);
+//    }
+
+    //cập nhật hóa đơn
     public Invoice updateInvoice(Integer id, Invoice updatedInvoice) {
         Invoice invoice = invoiceRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
@@ -104,6 +219,7 @@ public class InvoiceServiceImpl implements InvoiceService{
         return labels;
     }
 
+
     public List<Double> getRevenueValues(LocalDate date) {
         List<Double> values = new ArrayList<>();
         LocalDate startOfMonth = date.withDayOfMonth(1);
@@ -117,5 +233,261 @@ public class InvoiceServiceImpl implements InvoiceService{
 
         return values;
     }
+
+    // Lấy hóa đơn theo bookingId
+    public Optional<Invoice> getInvoiceByBookingId(Integer bookingId) {
+        return invoiceRepo.findByBookingId(bookingId);
+    }
+
+    // Phương thức lấy số giờ chơi theo bookingId
+    public Long getPlaytimeHoursByBookingId(Integer bookingId) {
+        // Tìm Invoice dựa trên bookingId
+        Optional<Invoice> optionalInvoice = invoiceRepo.findByBookingId(bookingId);
+
+        // Kiểm tra xem có Invoice không
+        if (optionalInvoice.isPresent()) {
+            Invoice invoice = optionalInvoice.get();
+
+            // Kiểm tra nếu cả startTime và endTime đều có giá trị
+            if (invoice.getStartTime() != null && invoice.getEndTime() != null) {
+                // Tính toán số giờ chơi
+                Duration duration = Duration.between(invoice.getStartTime(), invoice.getEndTime());
+                long hours = duration.toHours(); // Lấy số giờ
+                return hours;  // Trả về số giờ chơi
+            } else {
+                // Trường hợp không có startTime hoặc endTime
+                System.out.println("Start time hoặc End time không có trong invoice.");
+            }
+        } else {
+            // Trường hợp không tìm thấy Invoice với bookingId
+            System.out.println("Không tìm thấy invoice với bookingId: " + bookingId);
+        }
+
+        return 0L; // Trả về 0 nếu không có số giờ chơi
+    }
+
+    //tạo hóa đơn cho từng bàn trong booking
+    public void createInvoicesForBooking(Integer bookingId, List<Integer> tableIds) {
+        if (tableIds == null || tableIds.isEmpty()) {
+            throw new IllegalArgumentException("Danh sách bàn không hợp lệ.");
+        }
+
+        for (Integer tableId : tableIds) {
+            Invoice invoice = new Invoice();
+            invoice.setBookingId(bookingId);
+            invoice.setStartTime(LocalDateTime.now()); // Set thời gian bắt đầu
+            invoice.setEndTime(null);
+            invoice.setBillDate(null); // Chưa tạo hóa đơn thanh toán
+            invoice.setTotalMoney(0.0); // Số tiền sẽ được cập nhật sau
+            invoice.setStatus("Chưa Thanh Toán");
+            invoice.setTableId(tableId);
+            invoiceRepo.save(invoice);
+        }
+    }
+    //lấy hóa đơn theo id
+    public InvoiceResponseDTO getInvoiceById(Integer id) {
+        Optional<Invoice> optionalInvoice = invoiceRepo.findById(id);
+
+        if (optionalInvoice.isPresent()) {
+            Invoice invoice = optionalInvoice.get();
+            InvoiceResponseDTO dto = new InvoiceResponseDTO();
+            dto.setId(invoice.getId());
+            dto.setStartTime(invoice.getStartTime());
+            dto.setEndTime(invoice.getEndTime());
+            dto.setBillDate(invoice.getBillDate());
+            dto.setTotalMoney(invoice.getTotalMoney());
+            dto.setStatus(invoice.getStatus());
+            dto.setBookingId(invoice.getBookingId());
+            dto.setTableId(invoice.getTableId());
+
+            return dto;
+        }
+
+        return null; // Không tìm thấy hóa đơn
+    }
+
+    // Cập nhật thời gian kết thúc cho hóa đơn dựa trên tableId
+//    public Integer updateEndTimeAndLinkTable(Integer tableId, Integer bookingId, String endTime) {
+//        // Tìm hóa đơn ban đầu liên kết với booking
+//        Invoice invoice = invoiceRepo.findByBookingId(bookingId)
+//                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn cho booking với ID: " + bookingId));
+//
+//        // Cập nhật thời gian kết thúc cho hóa đơn
+//        try {
+//            invoice.setEndTime(LocalDateTime.parse(endTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+//        } catch (DateTimeParseException e) {
+//            throw new RuntimeException("Định dạng thời gian không hợp lệ: " + endTime);
+//        }
+//
+//        invoiceRepo.save(invoice);
+//
+//        // Lưu liên kết giữa hóa đơn và bàn vào bảng InvoiceTable
+//        InvoiceTable invoiceTable = new InvoiceTable();
+//        InvoiceTableId invoiceTableId = new InvoiceTableId();
+//        invoiceTableId.setInvoiceId(invoice.getId());
+//        invoiceTableId.setTableId(tableId);
+//
+//        invoiceTable.setId(invoiceTableId);
+//        invoiceTable.setInvoice(invoice);
+//        invoiceTable.setTableId(tableId);
+//
+//        invoiceTableRepo.save(invoiceTable);
+//
+//        // Trả về ID của hóa đơn để lưu vào database
+//        return invoice.getId();
+//    }
+
+    public Integer updateEndTimeAndLinkTable(Integer tableId, Integer bookingId, String endTime) {
+        // Tìm tất cả hóa đơn liên kết với bookingId
+        List<Invoice> invoices = invoiceRepo.findAllByBookingId(bookingId);
+
+        // Kiểm tra nếu không tìm thấy hóa đơn nào
+        if (invoices.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy hóa đơn cho booking với ID: " + bookingId);
+        }
+
+        // Kiểm tra bàn có liên kết với booking không, nếu không, báo lỗi
+        Invoice invoice = null;
+        for (Invoice inv : invoices) {
+            if (inv.getTableId() != null && inv.getTableId().equals(tableId)) {
+                invoice = inv;
+                break; // Dừng vòng lặp khi tìm thấy hóa đơn liên kết với bàn
+            }
+        }
+
+        // Nếu không tìm thấy hóa đơn nào liên kết với bàn, báo lỗi
+        if (invoice == null) {
+            throw new RuntimeException("Không tìm thấy hóa đơn liên kết với bàn " + tableId + " cho booking với ID: " + bookingId);
+        }
+
+        // Cập nhật thời gian kết thúc cho hóa đơn
+        try {
+            invoice.setEndTime(LocalDateTime.parse(endTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        } catch (DateTimeParseException e) {
+            throw new RuntimeException("Định dạng thời gian không hợp lệ: " + endTime);
+        }
+
+        // Lưu hóa đơn đã cập nhật
+        invoiceRepo.save(invoice);
+
+        // Trả về ID của hóa đơn đã cập nhật
+        return invoice.getId();
+    }
+
+
+
+    // Lấy hóa đơn theo tableId
+//    public Invoice getInvoiceByTableId(Integer tableId) {
+//        InvoiceTable invoiceTable = invoiceTableRepo.findByTableId(tableId)
+//                .orElseThrow(() -> new RuntimeException("Không tìm thấy InvoiceTable với tableId: " + tableId));
+//        return invoiceRepo.findById(invoiceTable.getInvoice().getId())
+//                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn với tableId: " + tableId));
+//    }
+
+
+//    public void createInvoicesForBooking(Integer bookingId) {
+//        // Gọi API từ BookingTable Service để lấy danh sách tableIds
+//        try {
+//        String url = bookingServiceUrl + "/booking_table/" + bookingId + "/tables";
+//        System.out.println("URL gọi API: " + url);
+//
+//
+//            // Gọi API và nhận danh sách các BookingTableDTO
+//            ResponseEntity<List<BookingTableDTO>> response = restTemplate.exchange(
+//                    url,
+//                    HttpMethod.GET,
+//                    null,
+//                    new ParameterizedTypeReference<List<BookingTableDTO>>() {}
+//            );
+//
+//            // Kiểm tra trạng thái HTTP của phản hồi
+//            if (response.getStatusCode().is2xxSuccessful()) {
+//                List<BookingTableDTO> bookingTables = response.getBody();
+//                System.out.println("Received booking tables: " + bookingTables);
+//
+//                // Kiểm tra dữ liệu trả về không null hoặc rỗng
+//                if (bookingTables == null || bookingTables.isEmpty()) {
+//                    throw new RuntimeException("Danh sách tableIds trả về từ BookingTable Service bị null hoặc rỗng.");
+//                }
+//
+//                // Lấy tất cả tableIds từ từng BookingTableDTO
+//                List<Integer> tableIds = bookingTables.stream()
+//                        .flatMap(bookingTableDTO -> bookingTableDTO.getTableIds().stream())  // Lấy tất cả các tableId từ danh sách tableIds
+//                        .collect(Collectors.toList());
+//
+//                // Tạo hóa đơn
+//                Invoice invoice = new Invoice();
+//                invoice.setBookingId(bookingId);
+//                invoice.setStartTime(LocalDateTime.now());
+//                invoice.setBillDate(LocalDateTime.now());
+//                invoice.setTotalMoney(0.0);
+//                invoice.setStatus("Chưa Thanh Toán");
+//
+//                // Lưu Invoice vào cơ sở dữ liệu
+//                Invoice savedInvoice = invoiceRepo.save(invoice);
+//
+//                // Lưu thông tin vào InvoiceTable
+//                for (Integer tableId : tableIds) {
+//                    InvoiceTable invoiceTable = new InvoiceTable();
+//
+//                    // Thiết lập ID hỗn hợp
+//                    InvoiceTableId invoiceTableId = new InvoiceTableId();
+//                    invoiceTableId.setInvoiceId(savedInvoice.getId());
+//                    invoiceTableId.setTableId(tableId);
+//
+//                    invoiceTable.setId(invoiceTableId);
+//                    invoiceTable.setInvoice(savedInvoice);
+//                    invoiceTable.setTableId(tableId);
+//
+//                    // Lưu vào bảng InvoiceTable
+//                    invoiceTableRepo.save(invoiceTable);
+//
+//                    System.out.println("Đã lưu vào InvoiceTable: InvoiceId = " + savedInvoice.getId() + ", TableId = " + tableId);
+//                }
+//
+//            } else {
+//                // Ném lỗi khi dịch vụ trả về trạng thái không thành công
+//                throw new RuntimeException("Dịch vụ BookingTable trả về mã trạng thái: " + response.getStatusCode());
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.err.println("Lỗi khác: " + e.getMessage());
+//            throw new RuntimeException("Lỗi khi tạo hóa đơn: " + e.getMessage());
+//        }
+//    }
+
+//    public void createInvoicesForBooking(Integer bookingId, List<Integer> tableIds) {
+//        // Lặp qua từng bàn trong danh sách
+//        for (Integer tableId : tableIds) {
+//            // Tạo hóa đơn mới
+//            Invoice invoice = new Invoice();
+//            invoice.setBookingId(bookingId);
+//            invoice.setStartTime(LocalDateTime.now());
+//            invoice.setEndTime(LocalDateTime.now()); //mặc định ban đầu là LocalDateTime.now()
+//            invoice.setBillDate(LocalDateTime.now()); //mặc định ban đầu là LocalDateTime.now()
+//            invoice.setTotalMoney(0.0);
+//            invoice.setStatus("Chưa Thanh Toán");
+//            invoiceRepo.save(invoice);
+//
+//            // Tạo InvoiceTable để lưu mối quan hệ
+//            InvoiceTable invoiceTable = new InvoiceTable();
+//            InvoiceTableId id = new InvoiceTableId(invoice.getId(), tableId);
+//            invoiceTable.setId(id);
+//            invoiceTable.setInvoice(invoice);
+//
+//            invoiceTableRepo.save(invoiceTable);
+//        }
+//    }
+
+    // Tìm hóa đơn theo invoiceId
+    public Optional<Invoice> findById(Integer invoiceId) {
+        return invoiceRepo.findById(invoiceId);
+    }
+
+    public List<Invoice> getInvoicesByBookingId(Integer bookingId) {
+        return invoiceRepo.findInvoiceByBookingId(bookingId);
+    }
+
+
 
 }

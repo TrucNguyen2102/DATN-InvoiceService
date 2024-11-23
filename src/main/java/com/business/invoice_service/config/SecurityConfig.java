@@ -24,8 +24,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/invoices/update/byBookingId/{bookingId}/endTime").permitAll()
                         .requestMatchers("/api/invoices/all").permitAll()
                         .requestMatchers("/api/invoices/update/bill-totalMoney/{bookingId}").permitAll()
+                        .requestMatchers("/api/invoices/update/bill-totalMoney/{tableId}").permitAll()
+                        .requestMatchers("/api/invoices/update/bill-totalMoney/{bookingId}/{tableId}").permitAll()
                                 .requestMatchers("/api/invoices/update/{id}").permitAll()
                         .requestMatchers("/api/invoices/revenue").permitAll()
+                        .requestMatchers("/api/invoices/booking/{bookingId}").permitAll()
+                        .requestMatchers("/api/invoices/playtime/hours").permitAll()
+                        .requestMatchers("/api/invoices/updateEndTimeAndLinkTable/{tableId}").permitAll()
+                        .requestMatchers("/api/invoices/byTableId/{tableId}").permitAll()
+                        .requestMatchers("/api/invoices/createForSelectedTable").permitAll()
+                        .requestMatchers("/api/invoices/create-for-booking/{bookingId}").permitAll()
+                        .requestMatchers("/api/invoices/{id}").permitAll()
+
+                        .requestMatchers("/api/invoices/invoice_table/{tableId}").permitAll()
+
                         .anyRequest().authenticated()
 
                 );

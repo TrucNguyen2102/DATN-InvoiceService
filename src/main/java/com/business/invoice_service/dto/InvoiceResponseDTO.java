@@ -19,6 +19,8 @@ public class InvoiceResponseDTO {
 
     private Integer bookingId;
 
+    private Integer tableId;
+
     public Integer getId() {
         return id;
     }
@@ -73,5 +75,13 @@ public class InvoiceResponseDTO {
 
     public void setBookingId(Integer bookingId) {
         this.bookingId = bookingId;
+    }
+
+    public Integer getTableId() {
+        return tableId;
+    }
+
+    public void setTableId(Integer tableId) {
+        this.tableId = tableId;
     }
 }

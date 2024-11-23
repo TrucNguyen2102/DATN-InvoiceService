@@ -16,12 +16,13 @@ public interface InvoiceService {
 
     List<InvoiceResponseDTO> getAllInvoices();
 
+    //cập nhật endTime
     Invoice updateEndTimeByBookingId(Integer bookingId, LocalDateTime endTime);
 
 //    Invoice updateInvoiceByBookingId(Integer bookingId, Invoice updatedInvoice);
 
-    Invoice updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update);
 
+    //cập nhật hóa đơn
     Invoice updateInvoice(Integer id, Invoice updatedInvoice);
 
     double getDailyRevenue(LocalDate date);
@@ -33,4 +34,44 @@ public interface InvoiceService {
     List<Double> getRevenueValues(LocalDate date);
 
 
+
+    // Lấy hóa đơn theo bookingId
+    Optional<Invoice> getInvoiceByBookingId(Integer bookingId);
+
+    // Phương thức lấy số giờ chơi theo bookingId
+    Long getPlaytimeHoursByBookingId(Integer bookingId);
+
+    //tạo hóa đơn cho từng bàn trong booking
+    void createInvoicesForBooking(Integer bookingId, List<Integer> tableIds);
+
+    //lấy hóa đơn theo id
+    InvoiceResponseDTO getInvoiceById(Integer id);
+
+    //cập nhật endTime của bàn đc chọn (ấn nút Kết Thúc -> Chọn Bàn)
+    Integer updateEndTimeAndLinkTable(Integer tableId, Integer bookingId, String endTime);
+
+
+    //cập nhật hóa đơn (billDate, totalMoney) theo bàn
+     Invoice updateInvoiceByTableId(Integer tableId, UpdateBillDateRequest request);
+
+    List<Invoice> getInvoicesByBookingId(Integer bookingId);
+
+
+
+
+
+
+
+
+//    Invoice getInvoiceByTableId(Integer tableId);
+//    void createInvoiceForSelectedTable(Integer tableId, Integer bookingId, Double totalMoney);
+//    void createInvoicesForBooking(Integer bookingId);
+//    void createInvoicesForBooking(Integer bookingId, List<Integer> tableIds);
+
+    Optional<Invoice> findById(Integer invoiceId);
+
+    //booking có nhiều hóa đơn (có nhiều bàn)
+//    List<Invoice> updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update);
+//    Invoice updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update);
+    //Invoice updateInvoiceTotalMoneyForTable(Integer invoiceId, Integer tableId, UpdateBillDateRequest update);
 }

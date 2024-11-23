@@ -30,4 +30,14 @@ public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
     @Query("SELECT SUM(i.totalMoney) FROM Invoice i WHERE YEAR(i.billDate) = YEAR(:date)")
     double getYearlyRevenue(@Param("date") LocalDate date);
 
+    // Tìm hóa đơn theo bookingId và tableId
+//    Invoice findByBookingIdAndTableId(Integer bookingId, Integer tableId);
+
+    // Truy vấn tất cả hóa đơn theo bookingId
+    List<Invoice> findAllByBookingId(Integer bookingId);
+
+    //tìm hóa đơn theo bàn
+    Optional<Invoice> findByTableId(Integer tableId);
+    Optional<Invoice> findTopByTableIdAndStatusOrderByBillDateDesc(Integer tableId, String status);
+    List<Invoice> findInvoiceByBookingId(Integer bookingId);
 }

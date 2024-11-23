@@ -1,31 +1,34 @@
 package com.business.invoice_service.controller;
 
 import com.business.invoice_service.dto.InvoiceResponseDTO;
+import com.business.invoice_service.dto.InvoiceWithTableDTO;
 import com.business.invoice_service.dto.UpdateBillDateRequest;
 import com.business.invoice_service.dto.UpdateEndTimeRequest;
 import com.business.invoice_service.entity.Invoice;
+//import com.business.invoice_service.entity.InvoiceTable;
 import com.business.invoice_service.repository.InvoiceRepo;
 import com.business.invoice_service.service.InvoiceService;
+//import com.business.invoice_service.service.InvoiceTableService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/invoices")
 public class InvoiceController {
     @Autowired
     private InvoiceService invoiceService;
+//    @Autowired
+//    private InvoiceTableService invoiceTableService;
     @Autowired
     private InvoiceRepo invoiceRepo;
 
@@ -34,6 +37,7 @@ public class InvoiceController {
         try {
             // Lấy thời gian hiện tại
             LocalDateTime now = LocalDateTime.now();
+
 
             // Thiết lập các giá trị cần thiết cho hóa đơn mới
             invoiceRequest.setStartTime(now); // Thời gian bắt đầu chơi
@@ -52,6 +56,71 @@ public class InvoiceController {
 
     }
 
+    //tạo hóa đơn cho từng bàn trong booking (chức năng Nhận Bàn)
+    @PostMapping("/create-for-booking/{bookingId}")
+    public ResponseEntity<String> createInvoicesForBooking(
+            @PathVariable Integer bookingId,
+            @RequestBody List<Integer> tableIds) {
+        try {
+            if (tableIds == null || tableIds.isEmpty()) {
+                return ResponseEntity.badRequest().body("Danh sách bàn không hợp lệ.");
+            }
+
+            invoiceService.createInvoicesForBooking(bookingId, tableIds);
+            return ResponseEntity.ok("Đã tạo hóa đơn cho từng bàn thành công.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi tạo hóa đơn: " + e.getMessage());
+        }
+    }
+
+
+
+    // API để tạo hóa đơn cho một bàn được yêu cầu thanh toán
+//    @PostMapping("/createForSelectedTable")
+//    public ResponseEntity<String> createInvoiceForSelectedTable(
+//            @RequestParam Integer tableId,
+//            @RequestParam Integer bookingId,
+//            @RequestParam Double totalMoney) {
+//        try {
+//            invoiceService.createInvoiceForSelectedTable(tableId, bookingId, totalMoney);
+//            return ResponseEntity.ok("Hóa đơn đã được tạo cho bàn: " + tableId);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi: " + e.getMessage());
+//        }
+//    }
+
+//    @PostMapping("/create-for-booking/{bookingId}")
+//    public ResponseEntity<String> createInvoicesForBooking(
+//            @PathVariable Integer bookingId,
+//            @RequestBody List<Integer> tableIds) {
+//        try {
+//            if (tableIds == null || tableIds.isEmpty()) {
+//                return ResponseEntity.badRequest().body("Danh sách bàn không hợp lệ.");
+//            }
+//
+//            invoiceService.createInvoicesForBooking(bookingId, tableIds);
+//            return ResponseEntity.ok("Đã tạo hóa đơn cho từng bàn thành công.");
+//        }catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//
+//    }
+
+//    public ResponseEntity<String> createInvoicesForBooking(@PathVariable Integer bookingId) {
+//        try {
+//            invoiceService.createInvoicesForBooking(bookingId);
+//            return ResponseEntity.ok("Đã tạo hóa đơn và lưu vào InvoiceTable thành công!");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("Lỗi khi tạo hóa đơn và lưu vào InvoiceTable.");
+//        }
+//    }
+
+
     @GetMapping("/all")
     public ResponseEntity<List<InvoiceResponseDTO>> getAllInvoices() {
         try {
@@ -63,6 +132,46 @@ public class InvoiceController {
         }
 
     }
+
+    // Lấy danh sách hóa đơn theo bookingId
+    @GetMapping("/booking/{bookingId}")
+    public ResponseEntity<Invoice> getInvoiceByBookingId(@PathVariable Integer bookingId) {
+        try {
+            Optional<Invoice> invoice = invoiceService.getInvoiceByBookingId(bookingId);
+
+            if (invoice.isPresent()) {
+                return ResponseEntity.ok(invoice.get()); // Trả về hóa đơn nếu có
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(null); // Trả về 404 nếu không tìm thấy hóa đơn
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+
+    }
+
+//    @GetMapping("/booking/{bookingId}")
+//    public ResponseEntity<List<Invoice>> getInvoicesByBookingId(@PathVariable Integer bookingId) {
+//        try {
+//            List<Invoice> invoices = invoiceService.getInvoicesByBookingId(bookingId);
+//
+//            if (!invoices.isEmpty()) {
+//                return ResponseEntity.ok(invoices); // Trả về tất cả hóa đơn
+//            } else {
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Không tìm thấy hóa đơn
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+//        }
+//    }
+
+
+
+
+
 
     // Cập nhật end_time cho hóa đơn
     @PutMapping("/update/byBookingId/{bookingId}/endTime")
@@ -78,16 +187,41 @@ public class InvoiceController {
         }
     }
 
-    @PutMapping("/update/bill-totalMoney/{bookingId}")
-    public ResponseEntity<?> updateInvoice(@PathVariable Integer bookingId, @RequestBody UpdateBillDateRequest update) {
+//    @PutMapping("/update/bill-totalMoney/{bookingId}")
+//    public ResponseEntity<?> updateInvoiceForBooking(@PathVariable Integer bookingId, @RequestBody UpdateBillDateRequest update) {
+//        try {
+//            Invoice updatedInvoice = invoiceService.updateInvoiceTotalMoney(bookingId, update);
+//            return ResponseEntity.ok(updatedInvoice);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(500).body("Có lỗi xảy ra khi cập nhật hóa đơn: " + e.getMessage());
+//        }
+//    }
+
+
+    //cập nhật hóa đơn của bàn khi lưu hóa đơn (chức năng Tạo Hóa Đơn -> Lưu)
+    @PutMapping("/update/bill-totalMoney/{tableId}")
+    public ResponseEntity<?> updateInvoiceByTable(
+            @PathVariable Integer tableId,
+            @RequestBody UpdateBillDateRequest request) {
         try {
-            Invoice updatedInvoice = invoiceService.updateInvoiceTotalMoney(bookingId, update);
+            // Gọi service để cập nhật hóa đơn theo tableId
+            Invoice updatedInvoice = invoiceService.updateInvoiceByTableId(tableId, request);
             return ResponseEntity.ok(updatedInvoice);
+        } catch (EntityNotFoundException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy hóa đơn cho bàn ID: " + tableId);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Có lỗi xảy ra khi cập nhật hóa đơn: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi cập nhật hóa đơn: " + e.getMessage());
         }
     }
+
+
+
+
+
 
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateInvoiceStatus(@PathVariable Integer id, @RequestBody Invoice updatedInvoice) {
@@ -147,6 +281,97 @@ public class InvoiceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "An error occurred while processing the request"));
         }
     }
+
+    @GetMapping("/playtime/hours")
+    public ResponseEntity<Long> getPlaytimeHours(@RequestParam Integer bookingId) {
+        try {
+            if (bookingId == null || bookingId <= 0) {
+                return ResponseEntity.badRequest().body(null);  // Return 400 if bookingId is invalid
+            }
+
+            Long playtimeHours = invoiceService.getPlaytimeHoursByBookingId(bookingId);
+
+            if (playtimeHours == null) {
+                return ResponseEntity.notFound().build();  // Return 404 if playtimeHours is null
+            }
+
+            return ResponseEntity.ok(playtimeHours);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);  // 500 if an error occurs
+        }
+    }
+
+    // Lấy thông tin hóa đơn theo tableId
+//    @GetMapping("/byTableId/{tableId}")
+//    public ResponseEntity<Invoice> getInvoiceByTableId(@PathVariable Integer tableId) {
+//       try {
+//           Invoice invoice = invoiceService.getInvoiceByTableId(tableId);
+//           return ResponseEntity.ok(invoice);
+//       }catch (Exception e) {
+//           e.printStackTrace();
+//           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+//       }
+//
+//    }
+
+    @PutMapping("/updateEndTimeAndLinkTable/{tableId}")
+    public ResponseEntity<String> updateEndTimeAndLinkTable(@PathVariable Integer tableId,
+                                                            @RequestParam Integer bookingId,
+                                                            @RequestParam String endTime) {
+        try {
+            Integer invoiceId = invoiceService.updateEndTimeAndLinkTable(tableId, bookingId, endTime);
+            return ResponseEntity.ok("Hóa đơn đã được cập nhật thời gian kết thúc và liên kết với bàn: " + tableId);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    // API lấy thông tin hóa đơn theo id
+    @GetMapping("/{id}")
+    public ResponseEntity<InvoiceResponseDTO> getInvoiceById(@PathVariable Integer id) {
+        try {
+            InvoiceResponseDTO invoice = invoiceService.getInvoiceById(id);
+            if (invoice != null) {
+                return ResponseEntity.ok(invoice);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+//    @GetMapping("/{invoiceId}")
+//    public ResponseEntity<InvoiceWithTableDTO> getInvoiceById(@PathVariable Integer invoiceId) {
+//        try {
+//            Optional<Invoice> invoice = invoiceService.findById(invoiceId);
+//            if (invoice.isPresent()) {
+//                // Lấy thông tin table từ InvoiceTable
+//                InvoiceTable invoiceTable = invoiceTableService.findTableByInvoiceId(invoiceId);
+//                if (invoiceTable != null) {
+//                    System.out.println("TableId của hóa đơn là: " + invoiceTable.getTableId());
+//                } else {
+//                    System.out.println("Không tìm thấy bảng cho hóa đơn này.");
+//                }
+//
+//                // Tạo DTO trả về
+//                // Tạo DTO để trả về thông tin hóa đơn kèm theo tableId
+//                InvoiceWithTableDTO invoiceWithTableDTO = new InvoiceWithTableDTO(invoice.get(),
+//                        invoiceTable != null ? invoiceTable.getTableId() : null);
+//                return ResponseEntity.ok(invoiceWithTableDTO);
+//            } else {
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
+
 
 
 

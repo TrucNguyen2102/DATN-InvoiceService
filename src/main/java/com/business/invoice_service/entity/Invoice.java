@@ -31,13 +31,17 @@ public class Invoice {
     @Column(name = "status", length = 50, nullable = false)
     private String status;
 
+//    @Column(name = "booking_id")
     @Column(name = "booking_id")
-    private Integer bookingId; //khóa ngoại của booking từ booking-service
+    private Integer bookingId;  // Chỉ lưu trữ ID của Booking (khóa ngoại)
+
+    @Column(name = "table_id")
+    private Integer tableId;
 
     public Invoice() {
 
     }
-    public Invoice(Integer id, LocalDateTime startTime, LocalDateTime endTime, LocalDateTime billDate, double totalMoney, String status, Integer bookingId) {
+    public Invoice(Integer id, LocalDateTime startTime, LocalDateTime endTime, LocalDateTime billDate, double totalMoney, String status, Integer bookingId, Integer tableId) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -45,6 +49,7 @@ public class Invoice {
         this.totalMoney = totalMoney;
         this.status = status;
         this.bookingId = bookingId;
+        this.tableId = tableId;
     }
 
     public Integer getId() {
@@ -101,5 +106,13 @@ public class Invoice {
 
     public void setBookingId(Integer bookingId) {
         this.bookingId = bookingId;
+    }
+
+    public Integer getTableId() {
+        return tableId;
+    }
+
+    public void setTableId(Integer tableId) {
+        this.tableId = tableId;
     }
 }

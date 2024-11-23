@@ -5,12 +5,22 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 public class UpdateBillDateRequest {
+
+//    private Integer tableId;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime billDate;
 
-    private double totalMoney;
+    private Double totalMoney;
 
     private String status;
+
+//    public Integer getTableId() {
+//        return tableId;
+//    }
+//
+//    public void setTableId(Integer tableId) {
+//        this.tableId = tableId;
+//    }
 
     public LocalDateTime getBillDate() {
         return billDate;
@@ -20,11 +30,11 @@ public class UpdateBillDateRequest {
         this.billDate = billDate;
     }
 
-    public double getTotalMoney() {
+    public Double getTotalMoney() {
         return totalMoney;
     }
 
-    public void setTotalMoney(double totalMoney) {
+    public void setTotalMoney(Double totalMoney) {
         this.totalMoney = totalMoney;
     }
 
