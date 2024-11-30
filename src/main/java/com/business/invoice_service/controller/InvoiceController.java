@@ -1,9 +1,6 @@
 package com.business.invoice_service.controller;
 
-import com.business.invoice_service.dto.InvoiceResponseDTO;
-import com.business.invoice_service.dto.InvoiceWithTableDTO;
-import com.business.invoice_service.dto.UpdateBillDateRequest;
-import com.business.invoice_service.dto.UpdateEndTimeRequest;
+import com.business.invoice_service.dto.*;
 import com.business.invoice_service.entity.Invoice;
 //import com.business.invoice_service.entity.InvoiceTable;
 import com.business.invoice_service.repository.InvoiceRepo;
@@ -11,6 +8,7 @@ import com.business.invoice_service.service.InvoiceService;
 //import com.business.invoice_service.service.InvoiceTableService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -134,39 +132,39 @@ public class InvoiceController {
     }
 
     // Lấy danh sách hóa đơn theo bookingId
-    @GetMapping("/booking/{bookingId}")
-    public ResponseEntity<Invoice> getInvoiceByBookingId(@PathVariable Integer bookingId) {
-        try {
-            Optional<Invoice> invoice = invoiceService.getInvoiceByBookingId(bookingId);
-
-            if (invoice.isPresent()) {
-                return ResponseEntity.ok(invoice.get()); // Trả về hóa đơn nếu có
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(null); // Trả về 404 nếu không tìm thấy hóa đơn
-            }
-        }catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-
-    }
-
 //    @GetMapping("/booking/{bookingId}")
-//    public ResponseEntity<List<Invoice>> getInvoicesByBookingId(@PathVariable Integer bookingId) {
+//    public ResponseEntity<Invoice> getInvoiceByBookingId(@PathVariable Integer bookingId) {
 //        try {
-//            List<Invoice> invoices = invoiceService.getInvoicesByBookingId(bookingId);
+//            Optional<Invoice> invoice = invoiceService.getInvoiceByBookingId(bookingId);
 //
-//            if (!invoices.isEmpty()) {
-//                return ResponseEntity.ok(invoices); // Trả về tất cả hóa đơn
+//            if (invoice.isPresent()) {
+//                return ResponseEntity.ok(invoice.get()); // Trả về hóa đơn nếu có
 //            } else {
-//                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Không tìm thấy hóa đơn
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                        .body(null); // Trả về 404 nếu không tìm thấy hóa đơn
 //            }
-//        } catch (Exception e) {
+//        }catch (Exception e) {
 //            e.printStackTrace();
 //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 //        }
+//
 //    }
+
+    @GetMapping("/booking/{bookingId}")
+    public ResponseEntity<List<Invoice>> getInvoicesByBookingId(@PathVariable Integer bookingId) {
+        try {
+            List<Invoice> invoices = invoiceService.getInvoicesByBookingId(bookingId);
+
+            if (!invoices.isEmpty()) {
+                return ResponseEntity.ok(invoices); // Trả về tất cả hóa đơn
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Không tìm thấy hóa đơn
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
 
 
@@ -282,39 +280,46 @@ public class InvoiceController {
         }
     }
 
-    @GetMapping("/playtime/hours")
-    public ResponseEntity<Long> getPlaytimeHours(@RequestParam Integer bookingId) {
+
+
+    @GetMapping("/total-playtime")
+    public ResponseEntity<Integer> getTotalPlayTime(@RequestParam("date") String dateStr) {
         try {
-            if (bookingId == null || bookingId <= 0) {
-                return ResponseEntity.badRequest().body(null);  // Return 400 if bookingId is invalid
-            }
-
-            Long playtimeHours = invoiceService.getPlaytimeHoursByBookingId(bookingId);
-
-            if (playtimeHours == null) {
-                return ResponseEntity.notFound().build();  // Return 404 if playtimeHours is null
-            }
-
-            return ResponseEntity.ok(playtimeHours);
-
-        } catch (Exception e) {
+            LocalDate date = LocalDate.parse(dateStr);
+            int totalMinutes = invoiceService.calculateTotalPlayTime(date);
+            return ResponseEntity.ok(totalMinutes); // Trả về tổng số phút
+        }catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);  // 500 if an error occurs
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+
     }
 
-    // Lấy thông tin hóa đơn theo tableId
-//    @GetMapping("/byTableId/{tableId}")
-//    public ResponseEntity<Invoice> getInvoiceByTableId(@PathVariable Integer tableId) {
-//       try {
-//           Invoice invoice = invoiceService.getInvoiceByTableId(tableId);
-//           return ResponseEntity.ok(invoice);
-//       }catch (Exception e) {
-//           e.printStackTrace();
-//           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-//       }
-//
-//    }
+
+
+
+
+
+
+    @GetMapping("/byTableIdAndStatus/{tableId}/{status}")
+    public ResponseEntity<InvoiceResponse> getInvoiceByTableIdAndStatus(
+            @PathVariable Integer tableId,
+            @PathVariable String status) {
+
+        try {
+            InvoiceResponse invoiceResponse = invoiceService.findInvoiceByTableIdAndStatus(tableId, status);
+
+            if (invoiceResponse != null) {
+                return ResponseEntity.ok(invoiceResponse);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+
+    }
 
     @PutMapping("/updateEndTimeAndLinkTable/{tableId}")
     public ResponseEntity<String> updateEndTimeAndLinkTable(@PathVariable Integer tableId,

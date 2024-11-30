@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,8 +37,28 @@ public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
     // Truy vấn tất cả hóa đơn theo bookingId
     List<Invoice> findAllByBookingId(Integer bookingId);
 
+//    @Query("SELECT i FROM Invoice i WHERE i.bookingId = :bookingId")
+//    List<Invoice> findAllByBookingId(@Param("bookingId") Integer bookingId);
+
+    @Query("SELECT i FROM Invoice i WHERE i.bookingId = :bookingId AND DATE(i.startTime) = :date")
+    List<Invoice> findAllByBookingIdAndDate(@Param("bookingId") Integer bookingId, @Param("date") LocalDate date);
+
+
     //tìm hóa đơn theo bàn
     Optional<Invoice> findByTableId(Integer tableId);
     Optional<Invoice> findTopByTableIdAndStatusOrderByBillDateDesc(Integer tableId, String status);
     List<Invoice> findInvoiceByBookingId(Integer bookingId);
+
+    // Tìm hóa đơn theo tableId và status
+    Optional<Invoice> findByTableIdAndStatus(Integer tableId, String status);
+
+    // Tìm hóa đơn theo ngày
+//    List<Invoice> findByBillDate(LocalDate billDate);
+    // Tìm tất cả các hóa đơn có billDate trong khoảng thời gian của ngày cụ thể
+//    List<Invoice> findByBillDateBetween(LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT SUM(TIMESTAMPDIFF(MINUTE, i.startTime, i.endTime)) FROM Invoice i WHERE DATE(i.billDate) = :date")
+    Integer calculateTotalPlayTimeInMinutes(@Param("date") LocalDate date);
+
+
 }

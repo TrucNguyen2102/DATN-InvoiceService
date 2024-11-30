@@ -1,5 +1,6 @@
 package com.business.invoice_service.service;
 
+import com.business.invoice_service.dto.InvoiceResponse;
 import com.business.invoice_service.dto.InvoiceResponseDTO;
 import com.business.invoice_service.dto.UpdateBillDateRequest;
 import com.business.invoice_service.entity.Invoice;
@@ -39,7 +40,16 @@ public interface InvoiceService {
     Optional<Invoice> getInvoiceByBookingId(Integer bookingId);
 
     // Phương thức lấy số giờ chơi theo bookingId
-    Long getPlaytimeHoursByBookingId(Integer bookingId);
+
+//    Long getTotalPlaytimeHoursByBookingIdAndDate(Integer bookingId, LocalDate date);
+//    Long getTotalPlaytimeForAllBookings(LocalDate date);
+
+//    Long getTotalPlaytimeHoursByBookingId(Integer bookingId);
+//    Long getPlaytimeHoursByBookingId(Integer bookingId);
+
+//    Double calculateTotalPlayTime(LocalDate date);
+
+    Integer calculateTotalPlayTime(LocalDate date);
 
     //tạo hóa đơn cho từng bàn trong booking
     void createInvoicesForBooking(Integer bookingId, List<Integer> tableIds);
@@ -55,6 +65,12 @@ public interface InvoiceService {
      Invoice updateInvoiceByTableId(Integer tableId, UpdateBillDateRequest request);
 
     List<Invoice> getInvoicesByBookingId(Integer bookingId);
+
+//    Integer getInvoiceIdByTableId(Integer tableId);
+
+//    InvoiceResponse findInvoiceByTableId(Integer tableId);
+
+    InvoiceResponse findInvoiceByTableIdAndStatus(Integer tableId, String status);
 
 
 

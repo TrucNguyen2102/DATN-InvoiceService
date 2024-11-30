@@ -1,8 +1,6 @@
 package com.business.invoice_service.service;
 
-import com.business.invoice_service.dto.BookingTableDTO;
-import com.business.invoice_service.dto.InvoiceResponseDTO;
-import com.business.invoice_service.dto.UpdateBillDateRequest;
+import com.business.invoice_service.dto.*;
 import com.business.invoice_service.entity.Invoice;
 
 import com.business.invoice_service.exception.ResourceNotFoundException;
@@ -13,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -41,16 +40,15 @@ public class InvoiceServiceImpl implements InvoiceService{
     @Value("${tablePlayServiceUrl}") // URL của TablePlay Service
     private String tablePlayServiceUrl;
 
-    @Value("${bookingServiceUrl}") // URL của TablePlay Service
-    private String bookingServiceUrl;
+//    @Value("${bookingServiceUrl}") // URL của TablePlay Service
+//    private String bookingServiceUrl;
 
-//    public InvoiceServiceImpl(InvoiceRepo invoiceRepo, InvoiceTableRepo invoiceTableRepo, RestTemplate restTemplate, @Value("${tablePlayServiceUrl}") String tablePlayServiceUrl, @Value("${bookingServiceUrl}") String bookingServiceUrl) {
-//        this.invoiceRepo = invoiceRepo;
-//        this.invoiceTableRepo = invoiceTableRepo;
-//        this.restTemplate = restTemplate;
-//        this.tablePlayServiceUrl = tablePlayServiceUrl;
-//        this.bookingServiceUrl = bookingServiceUrl;
-//    }
+
+    public InvoiceServiceImpl(InvoiceRepo invoiceRepo, RestTemplate restTemplate, @Value("${tablePlayServiceUrl}") String tablePlayServiceUrl) {
+        this.invoiceRepo = invoiceRepo;
+        this.restTemplate = restTemplate;
+        this.tablePlayServiceUrl = tablePlayServiceUrl;
+    }
 
     public Invoice saveInvoice(Invoice invoice) {
         return invoiceRepo.save(invoice);
@@ -240,31 +238,133 @@ public class InvoiceServiceImpl implements InvoiceService{
     }
 
     // Phương thức lấy số giờ chơi theo bookingId
-    public Long getPlaytimeHoursByBookingId(Integer bookingId) {
-        // Tìm Invoice dựa trên bookingId
-        Optional<Invoice> optionalInvoice = invoiceRepo.findByBookingId(bookingId);
 
-        // Kiểm tra xem có Invoice không
-        if (optionalInvoice.isPresent()) {
-            Invoice invoice = optionalInvoice.get();
+    // Tính tổng thời gian chơi của các bàn trong ngày
 
-            // Kiểm tra nếu cả startTime và endTime đều có giá trị
-            if (invoice.getStartTime() != null && invoice.getEndTime() != null) {
-                // Tính toán số giờ chơi
-                Duration duration = Duration.between(invoice.getStartTime(), invoice.getEndTime());
-                long hours = duration.toHours(); // Lấy số giờ
-                return hours;  // Trả về số giờ chơi
-            } else {
-                // Trường hợp không có startTime hoặc endTime
-                System.out.println("Start time hoặc End time không có trong invoice.");
-            }
-        } else {
-            // Trường hợp không tìm thấy Invoice với bookingId
-            System.out.println("Không tìm thấy invoice với bookingId: " + bookingId);
-        }
+//    public Double calculateTotalPlayTime(LocalDate date) {
+//        // Tạo thời gian bắt đầu và kết thúc cho ngày đã cho
+//        LocalDateTime startOfDay = date.atStartOfDay();  // Thời gian 00:00:00
+//        LocalDateTime endOfDay = date.atTime(23, 59, 59, 999999999); // Thời gian 23:59:59.999999999
+//
+//        // Lấy tất cả các hóa đơn trong khoảng thời gian này
+//        List<Invoice> invoices = invoiceRepo.findByBillDateBetween(startOfDay, endOfDay);
+//
+//        double totalPlayTime = 0.0;
+//        for (Invoice invoice : invoices) {
+//            LocalDateTime startTime = invoice.getStartTime();
+//            LocalDateTime endTime = invoice.getEndTime();
+//
+//            // Tính thời gian chơi
+//            if (startTime != null && endTime != null) {
+//                Duration duration = Duration.between(startTime, endTime);
+//                totalPlayTime += duration.toHours(); // Thêm vào tổng số giờ
+//            }
+//        }
+//
+//        return totalPlayTime;
+//    }
 
-        return 0L; // Trả về 0 nếu không có số giờ chơi
+    public Integer calculateTotalPlayTime(LocalDate date) {
+        Integer totalPlayTime = invoiceRepo.calculateTotalPlayTimeInMinutes(date);
+        return totalPlayTime != null ? totalPlayTime : 0; // Trả về 0 nếu không có dữ liệu
     }
+
+
+
+//    public Double calculateTotalPlayTime(LocalDate date) {
+//        List<Invoice> invoices = invoiceRepo.findByBillDate(date); // Tìm hóa đơn theo ngày
+//
+//        double totalPlayTime = 0.0;
+//        for (Invoice invoice : invoices) {
+//            LocalDateTime startTime = invoice.getStartTime();
+//            LocalDateTime endTime = invoice.getEndTime();
+//
+//            // Tính thời gian chơi bằng cách trừ startTime khỏi endTime
+//            if (startTime != null && endTime != null) {
+//                Duration duration = Duration.between(startTime, endTime);
+//                totalPlayTime += duration.toHours(); // Thêm vào tổng số giờ
+//            }
+//        }
+//
+//        return totalPlayTime;
+//    }
+
+//    public Long getTotalPlaytimeHoursByBookingIdAndDate(Integer bookingId, LocalDate date) {
+//        // Lấy danh sách các Invoice theo bookingId và ngày
+//        List<Invoice> invoices = invoiceRepo.findAllByBookingIdAndDate(bookingId, date);
+//
+//        // Nếu không có Invoice nào, trả về 0
+//        if (invoices.isEmpty()) {
+//            System.out.println("Không có hóa đơn nào cho bookingId: " + bookingId + " và ngày: " + date);
+//            return 0L;
+//        }
+//
+//        // Tính tổng số giờ chơi
+//        long totalHours = 0;
+//        for (Invoice invoice : invoices) {
+//            if (invoice.getStartTime() != null && invoice.getEndTime() != null) {
+//                // Tính thời gian chơi cho từng hóa đơn
+//                Duration duration = Duration.between(invoice.getStartTime(), invoice.getEndTime());
+//                totalHours += duration.toHours();
+//            } else {
+//                System.out.println("Hóa đơn thiếu startTime hoặc endTime: Invoice ID = " + invoice.getId());
+//            }
+//        }
+//
+//        return totalHours; // Trả về tổng số giờ chơi
+//    }
+
+
+//    public Long getTotalPlaytimeHoursByBookingId(Integer bookingId) {
+//        // Tìm tất cả các Invoice liên quan đến bookingId
+//        List<Invoice> invoices = invoiceRepo.findAllByBookingId(bookingId);
+//
+//        // Nếu không có Invoice nào, trả về 0
+//        if (invoices.isEmpty()) {
+//            System.out.println("Không có hóa đơn nào cho bookingId: " + bookingId);
+//            return 0L;
+//        }
+//
+//        // Tính tổng số giờ chơi
+//        long totalHours = 0;
+//        for (Invoice invoice : invoices) {
+//            if (invoice.getStartTime() != null && invoice.getEndTime() != null) {
+//                // Tính thời gian chơi cho từng hóa đơn
+//                Duration duration = Duration.between(invoice.getStartTime(), invoice.getEndTime());
+//                totalHours += duration.toHours();
+//            } else {
+//                System.out.println("Hóa đơn thiếu startTime hoặc endTime: Invoice ID = " + invoice.getId());
+//            }
+//        }
+//
+//        return totalHours; // Trả về tổng số giờ chơi
+//    }
+
+//    public Long getPlaytimeHoursByBookingId(Integer bookingId) {
+//        // Tìm Invoice dựa trên bookingId
+//        Optional<Invoice> optionalInvoice = invoiceRepo.findByBookingId(bookingId);
+//
+//        // Kiểm tra xem có Invoice không
+//        if (optionalInvoice.isPresent()) {
+//            Invoice invoice = optionalInvoice.get();
+//
+//            // Kiểm tra nếu cả startTime và endTime đều có giá trị
+//            if (invoice.getStartTime() != null && invoice.getEndTime() != null) {
+//                // Tính toán số giờ chơi
+//                Duration duration = Duration.between(invoice.getStartTime(), invoice.getEndTime());
+//                long hours = duration.toHours(); // Lấy số giờ
+//                return hours;  // Trả về số giờ chơi
+//            } else {
+//                // Trường hợp không có startTime hoặc endTime
+//                System.out.println("Start time hoặc End time không có trong invoice.");
+//            }
+//        } else {
+//            // Trường hợp không tìm thấy Invoice với bookingId
+//            System.out.println("Không tìm thấy invoice với bookingId: " + bookingId);
+//        }
+//
+//        return 0L; // Trả về 0 nếu không có số giờ chơi
+//    }
 
     //tạo hóa đơn cho từng bàn trong booking
     public void createInvoicesForBooking(Integer bookingId, List<Integer> tableIds) {
@@ -488,6 +588,42 @@ public class InvoiceServiceImpl implements InvoiceService{
         return invoiceRepo.findInvoiceByBookingId(bookingId);
     }
 
+    // Phương thức để lấy invoiceId từ tableId
+//    public Integer getInvoiceIdByTableId(Integer tableId) {
+//        // URL của Service Table (thay đổi cho đúng địa chỉ)
+//        String tableServiceUrl = tablePlayServiceUrl + "/" + tableId;
+//
+//        // Gọi API từ Table Service để lấy thông tin bàn
+//        ResponseEntity<TablePlayDTO> response = restTemplate.exchange(tableServiceUrl, HttpMethod.GET, null, TablePlayDTO.class);
+//
+//        if (response.getStatusCode() == HttpStatus.OK) {
+//            TablePlayDTO tableDTO = response.getBody();
+//            if (tableDTO != null) {
+//                // Tìm hóa đơn có trạng thái "Chưa Thanh Toán" cho bàn
+//                Invoice invoice = invoiceRepo.findByTableIdAndStatus(tableId, "Chưa Thanh Toán")
+//                        .orElseThrow(() -> new RuntimeException("No active invoice found for table id: " + tableId));
+//                return invoice.getId(); // Trả về invoiceId
+//            }
+//        } else {
+//            throw new RuntimeException("Error calling Table Service");
+//        }
+//
+//        return null; // If no invoice is found
+//    }
+
+    // Tìm hóa đơn dựa trên tableId
+    // Tìm hóa đơn của bàn có trạng thái "Chưa Thanh Toán"
+    public InvoiceResponse findInvoiceByTableIdAndStatus(Integer tableId, String status) {
+        Optional<Invoice> invoice = invoiceRepo.findByTableIdAndStatus(tableId, status);
+
+        if (invoice.isPresent()) {
+            // Trả về dữ liệu hóa đơn nếu tìm thấy
+            return new InvoiceResponse(invoice.get().getId());
+        } else {
+            // Trả về null hoặc exception nếu không tìm thấy hóa đơn
+            return null;
+        }
+    }
 
 
 }
