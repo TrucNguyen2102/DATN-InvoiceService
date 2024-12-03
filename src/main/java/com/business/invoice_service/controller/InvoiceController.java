@@ -30,6 +30,22 @@ public class InvoiceController {
     @Autowired
     private InvoiceRepo invoiceRepo;
 
+    @GetMapping("/endpoints")
+    public List<Map<String, String>> getEndpoints() {
+        return List.of(
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/revenue"),
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/total-playtime"),
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/all"),
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/byTableIdAndStatus/{tableId}/{status}"),
+                Map.of("service", "invoice-service", "method", "POST", "url", "/api/invoices/create-for-booking/{id}"),
+                Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/byBookingId/{id}/endTime"),
+                Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/updateEndTimeAndLinkTable/{tableId}"),
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/{id}"),
+                Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/bill-totalMoney/{tableId}"),
+                Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/{id}")
+        );
+    }
+
     @PostMapping("/create")
     public ResponseEntity<Invoice> createInvoice(@RequestBody Invoice invoiceRequest) {
         try {

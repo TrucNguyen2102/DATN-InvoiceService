@@ -20,6 +20,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/invoices/endpoints").permitAll()
                         .requestMatchers("/api/invoices/create").permitAll()
                         .requestMatchers("/api/invoices/update/byBookingId/{bookingId}/endTime").permitAll()
                         .requestMatchers("/api/invoices/all").permitAll()
