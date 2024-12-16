@@ -60,5 +60,8 @@ public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
     @Query("SELECT SUM(TIMESTAMPDIFF(MINUTE, i.startTime, i.endTime)) FROM Invoice i WHERE DATE(i.billDate) = :date")
     Integer calculateTotalPlayTimeInMinutes(@Param("date") LocalDate date);
 
+    // Phương thức kiểm tra xem có tồn tại Invoice nào có tableId không
+    boolean existsByTableId(Integer tableId);
+
 
 }

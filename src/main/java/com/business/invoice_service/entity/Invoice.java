@@ -38,10 +38,13 @@ public class Invoice {
     @Column(name = "table_id")
     private Integer tableId;
 
+    @Column(name = "method_id")
+    private Integer methodId;
+
     public Invoice() {
 
     }
-    public Invoice(Integer id, LocalDateTime startTime, LocalDateTime endTime, LocalDateTime billDate, double totalMoney, String status, Integer bookingId, Integer tableId) {
+    public Invoice(Integer id, LocalDateTime startTime, LocalDateTime endTime, LocalDateTime billDate, double totalMoney, String status, Integer bookingId, Integer tableId, Integer methodId) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -50,6 +53,7 @@ public class Invoice {
         this.status = status;
         this.bookingId = bookingId;
         this.tableId = tableId;
+        this.methodId = methodId;
     }
 
     public Integer getId() {
@@ -114,5 +118,13 @@ public class Invoice {
 
     public void setTableId(Integer tableId) {
         this.tableId = tableId;
+    }
+
+    public Integer getMethodId() {
+        return methodId;
+    }
+
+    public void setMethodId(Integer methodId) {
+        this.methodId = methodId;
     }
 }

@@ -21,6 +21,8 @@ public class InvoiceResponseDTO {
 
     private Integer tableId;
 
+    private Integer methodId;
+
     public Integer getId() {
         return id;
     }
@@ -83,5 +85,13 @@ public class InvoiceResponseDTO {
 
     public void setTableId(Integer tableId) {
         this.tableId = tableId;
+    }
+
+    public Integer getMethodId() {
+        return methodId;
+    }
+
+    public void setMethodId(Integer methodId) {
+        this.methodId = methodId;
     }
 }

@@ -42,7 +42,8 @@ public class InvoiceController {
                 Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/updateEndTimeAndLinkTable/{tableId}"),
                 Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/{id}"),
                 Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/bill-totalMoney/{tableId}"),
-                Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/{id}")
+                Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/{id}"),
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/check-table-used/{tableId}")
         );
     }
 
@@ -246,6 +247,7 @@ public class InvoiceController {
 
             // Cập nhật các trường cần thiết
             invoice.setStatus(updatedInvoice.getStatus());
+            invoice.setMethodId(updatedInvoice.getMethodId());
 //            invoice.setBillDate(updatedInvoice.getBillDate());
 //            invoice.setTotalMoney(updatedInvoice.getTotalMoney());
 
@@ -366,32 +368,21 @@ public class InvoiceController {
         }
     }
 
-//    @GetMapping("/{invoiceId}")
-//    public ResponseEntity<InvoiceWithTableDTO> getInvoiceById(@PathVariable Integer invoiceId) {
-//        try {
-//            Optional<Invoice> invoice = invoiceService.findById(invoiceId);
-//            if (invoice.isPresent()) {
-//                // Lấy thông tin table từ InvoiceTable
-//                InvoiceTable invoiceTable = invoiceTableService.findTableByInvoiceId(invoiceId);
-//                if (invoiceTable != null) {
-//                    System.out.println("TableId của hóa đơn là: " + invoiceTable.getTableId());
-//                } else {
-//                    System.out.println("Không tìm thấy bảng cho hóa đơn này.");
-//                }
-//
-//                // Tạo DTO trả về
-//                // Tạo DTO để trả về thông tin hóa đơn kèm theo tableId
-//                InvoiceWithTableDTO invoiceWithTableDTO = new InvoiceWithTableDTO(invoice.get(),
-//                        invoiceTable != null ? invoiceTable.getTableId() : null);
-//                return ResponseEntity.ok(invoiceWithTableDTO);
-//            } else {
-//                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
-//    }
+    // API kiểm tra bàn có trong hóa đơn nào không
+    @GetMapping("/check-table-used/{tableId}")
+    public ResponseEntity<Boolean> isTableUsedInInvoice(@PathVariable Integer tableId) {
+        try {
+            // Kiểm tra xem có Invoice nào chứa tableId này không
+            boolean isUsed = invoiceRepo.existsByTableId(tableId);
+
+            // Trả về kết quả
+            return ResponseEntity.ok(isUsed);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
 
 

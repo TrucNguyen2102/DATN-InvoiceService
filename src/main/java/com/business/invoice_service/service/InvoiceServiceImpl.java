@@ -3,9 +3,11 @@ package com.business.invoice_service.service;
 import com.business.invoice_service.dto.*;
 import com.business.invoice_service.entity.Invoice;
 
+import com.business.invoice_service.entity.PaymentMethod;
 import com.business.invoice_service.exception.ResourceNotFoundException;
 import com.business.invoice_service.repository.InvoiceRepo;
 
+import com.business.invoice_service.repository.PaymentMethodRepo;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +35,9 @@ public class InvoiceServiceImpl implements InvoiceService{
 
 //    @Autowired
 //    private InvoiceTableRepo invoiceTableRepo;
+
+    @Autowired
+    private PaymentMethodRepo paymentMethodRepo;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -75,6 +80,7 @@ public class InvoiceServiceImpl implements InvoiceService{
             dto.setStatus(invoice.getStatus());
             dto.setBookingId(invoice.getBookingId());
             dto.setTableId(invoice.getTableId());
+            dto.setMethodId(invoice.getMethodId());
 
             return dto;
         }).collect(Collectors.toList());
@@ -372,6 +378,7 @@ public class InvoiceServiceImpl implements InvoiceService{
             throw new IllegalArgumentException("Danh sách bàn không hợp lệ.");
         }
 
+
         for (Integer tableId : tableIds) {
             Invoice invoice = new Invoice();
             invoice.setBookingId(bookingId);
@@ -381,6 +388,7 @@ public class InvoiceServiceImpl implements InvoiceService{
             invoice.setTotalMoney(0.0); // Số tiền sẽ được cập nhật sau
             invoice.setStatus("Chưa Thanh Toán");
             invoice.setTableId(tableId);
+            invoice.setMethodId(null);
             invoiceRepo.save(invoice);
         }
     }

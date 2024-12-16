@@ -39,6 +39,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/invoices/invoice_table/{tableId}").permitAll()
 
+                        .requestMatchers("/api/invoices/payments/all").permitAll()
+                        .requestMatchers("/api/invoices/check-table-used/{tableId}").permitAll()
+
                         .anyRequest().authenticated()
 
                 );
