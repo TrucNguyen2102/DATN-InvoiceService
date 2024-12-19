@@ -23,9 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -631,6 +629,18 @@ public class InvoiceServiceImpl implements InvoiceService{
             // Trả về null hoặc exception nếu không tìm thấy hóa đơn
             return null;
         }
+    }
+
+    public List<Map<String, Object>> getTotalInvoicesByPaymentMethod() {
+        List<Object[]> results = invoiceRepo.getTotalInvoicesByPaymentMethod();
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (Object[] result : results) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("methodId", result[0]);
+            map.put("totalMoney", result[1]);
+            response.add(map);
+        }
+        return response;
     }
 
 

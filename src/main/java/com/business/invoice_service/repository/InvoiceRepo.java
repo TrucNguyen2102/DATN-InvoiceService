@@ -63,5 +63,9 @@ public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
     // Phương thức kiểm tra xem có tồn tại Invoice nào có tableId không
     boolean existsByTableId(Integer tableId);
 
+    @Query("SELECT i.methodId, SUM(i.totalMoney) FROM Invoice i WHERE i.status = 'PAID' GROUP BY i.methodId")
+    List<Object[]> getTotalInvoicesByPaymentMethod();
+
+
 
 }

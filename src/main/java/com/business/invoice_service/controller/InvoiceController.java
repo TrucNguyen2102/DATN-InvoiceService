@@ -43,7 +43,8 @@ public class InvoiceController {
                 Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/{id}"),
                 Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/bill-totalMoney/{tableId}"),
                 Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/{id}"),
-                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/check-table-used/{tableId}")
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/check-table-used/{tableId}"),
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/total-by-payment-method")
         );
     }
 
@@ -381,6 +382,17 @@ public class InvoiceController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/total-by-payment-method")
+    public ResponseEntity<List<Map<String, Object>>> getTotalInvoicesByPaymentMethod() {
+        try {
+            return ResponseEntity.ok(invoiceService.getTotalInvoicesByPaymentMethod());
+        }catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
     }
 
 

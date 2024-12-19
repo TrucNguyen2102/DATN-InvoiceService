@@ -8,6 +8,7 @@ import com.business.invoice_service.entity.Invoice;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface InvoiceService {
@@ -90,4 +91,6 @@ public interface InvoiceService {
 //    List<Invoice> updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update);
 //    Invoice updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update);
     //Invoice updateInvoiceTotalMoneyForTable(Integer invoiceId, Integer tableId, UpdateBillDateRequest update);
+
+    List<Map<String, Object>> getTotalInvoicesByPaymentMethod();
 }
