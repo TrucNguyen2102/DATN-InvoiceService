@@ -1,5 +1,6 @@
 package com.business.invoice_service.repository;
 
+import com.business.invoice_service.dto.PaymentDTO;
 import com.business.invoice_service.dto.RevenueChartData;
 import com.business.invoice_service.entity.Invoice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,11 +11,13 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
 public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
     Optional<Invoice> findByBookingId(Integer bookingId);
+
 
     @Query("SELECT COALESCE(SUM(i.totalMoney), 0) FROM Invoice i WHERE DATE(i.billDate) = :date")
     Double getDailyRevenue(@Param("date") LocalDate date);
@@ -57,8 +60,15 @@ public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
     // Tìm tất cả các hóa đơn có billDate trong khoảng thời gian của ngày cụ thể
 //    List<Invoice> findByBillDateBetween(LocalDateTime start, LocalDateTime end);
 
-    @Query("SELECT SUM(TIMESTAMPDIFF(MINUTE, i.startTime, i.endTime)) FROM Invoice i WHERE DATE(i.billDate) = :date")
-    Integer calculateTotalPlayTimeInMinutes(@Param("date") LocalDate date);
+//    @Query("SELECT SUM(TIMESTAMPDIFF(MINUTE, i.startTime, i.endTime)) FROM Invoice i WHERE DATE(i.billDate) = :date")
+//    Integer calculateTotalPlayTimeInMinutes(@Param("date") LocalDate date);
+
+    @Query("SELECT SUM(TIMESTAMPDIFF(MINUTE, i.startTime, i.endTime)) " +
+            "FROM Invoice i WHERE i.startTime BETWEEN :startDate AND :endDate")
+    Integer calculateTotalPlayTimeInMinutes(@Param("startDate") LocalDateTime startDate,
+                                            @Param("endDate") LocalDateTime endDate);
+
+
 
     // Phương thức kiểm tra xem có tồn tại Invoice nào có tableId không
     boolean existsByTableId(Integer tableId);
@@ -67,5 +77,20 @@ public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
     List<Object[]> getTotalInvoicesByPaymentMethod();
 
 
+    @Query("SELECT pm.name AS paymentMethod, COUNT(*) AS invoiceCount " +
+            "FROM Invoice i JOIN PaymentMethod pm ON i.methodId = pm.id " +
+            "GROUP BY pm.name")
+    List<Object[]> countInvoicesByPaymentMethod();
 
+    @Query("SELECT pm.name AS paymentMethod, SUM(i.totalMoney) AS totalMoney " +
+            "FROM Invoice i JOIN PaymentMethod pm ON i.methodId = pm.id " +
+            "GROUP BY pm.name")
+    List<Object[]> findTotalAmountByPaymentMethod();
+
+
+    @Query("SELECT SUM(i.totalMoney) FROM Invoice i WHERE i.billDate BETWEEN :startDate AND :endDate")
+    double calculateRevenueByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT DATE(i.billDate), SUM(i.totalMoney) FROM Invoice i WHERE i.billDate BETWEEN :startDate AND :endDate GROUP BY DATE(i.billDate)")
+    List<Object[]> calculateChartData(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

@@ -2,6 +2,7 @@ package com.business.invoice_service.service;
 
 import com.business.invoice_service.dto.InvoiceResponse;
 import com.business.invoice_service.dto.InvoiceResponseDTO;
+import com.business.invoice_service.dto.PaymentDTO;
 import com.business.invoice_service.dto.UpdateBillDateRequest;
 import com.business.invoice_service.entity.Invoice;
 
@@ -50,7 +51,9 @@ public interface InvoiceService {
 
 //    Double calculateTotalPlayTime(LocalDate date);
 
-    Integer calculateTotalPlayTime(LocalDate date);
+//    Integer calculateTotalPlayTime(LocalDate date);
+
+    Integer calculateTotalPlayTime(LocalDateTime startDateTime, LocalDateTime endDateTime);
 
     //tạo hóa đơn cho từng bàn trong booking
     void createInvoicesForBooking(Integer bookingId, List<Integer> tableIds);
@@ -92,5 +95,15 @@ public interface InvoiceService {
 //    Invoice updateInvoiceTotalMoney(Integer bookingId, UpdateBillDateRequest update);
     //Invoice updateInvoiceTotalMoneyForTable(Integer invoiceId, Integer tableId, UpdateBillDateRequest update);
 
-    List<Map<String, Object>> getTotalInvoicesByPaymentMethod();
+//    List<Map<String, Object>> getTotalInvoicesByPaymentMethod();
+
+    Map<String, Long> countInvoicesByPaymentMethod();
+
+//    List<PaymentDTO> getPaymentStats();
+
+    Map<String, Double> totalInvoicesByPaymentMethod();
+
+    double getTotalRevenueInRange(LocalDate startDate, LocalDate endDate);
+
+    List<Object[]> getChartData(LocalDateTime startDate, LocalDateTime endDate);
 }

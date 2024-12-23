@@ -44,6 +44,7 @@ public class InvoiceController {
                 Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/bill-totalMoney/{tableId}"),
                 Map.of("service", "invoice-service", "method", "PUT", "url", "/api/invoices/update/{id}"),
                 Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/check-table-used/{tableId}"),
+                Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/count-by-payment-method"),
                 Map.of("service", "invoice-service", "method", "GET", "url", "/api/invoices/total-by-payment-method")
         );
     }
@@ -300,19 +301,118 @@ public class InvoiceController {
     }
 
 
+    @GetMapping("/revenue/range")
+    public ResponseEntity<Map<String, Object>> getRevenueRange(
+            @RequestParam("startDate") String startDateStr,
+            @RequestParam("endDate") String endDateStr) {
 
-    @GetMapping("/total-playtime")
-    public ResponseEntity<Integer> getTotalPlayTime(@RequestParam("date") String dateStr) {
+        // Kiểm tra định dạng ngày
+        if (startDateStr == null || startDateStr.isEmpty() || endDateStr == null || endDateStr.isEmpty()) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Start date and end date are required"));
+        }
+
         try {
-            LocalDate date = LocalDate.parse(dateStr);
-            int totalMinutes = invoiceService.calculateTotalPlayTime(date);
-            return ResponseEntity.ok(totalMinutes); // Trả về tổng số phút
-        }catch (Exception e) {
+            // Chuyển đổi chuỗi ngày thành LocalDate
+            LocalDate startDate = LocalDate.parse(startDateStr);
+            LocalDate endDate = LocalDate.parse(endDateStr);
+
+            // Lấy tổng doanh thu trong khoảng thời gian từ startDate đến endDate
+            double totalRevenue = invoiceService.getTotalRevenueInRange(startDate, endDate);
+
+            // Trả về tổng doanh thu
+            Map<String, Object> response = new HashMap<>();
+            response.put("totalRevenue", totalRevenue);
+
+            return ResponseEntity.ok(response);
+        } catch (DateTimeParseException e) {
+            // Xử lý lỗi định dạng ngày
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Invalid date format. Please use yyyy-MM-dd format."));
+        } catch (Exception e) {
+            // Xử lý các lỗi khác
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "An error occurred while processing the request"));
+        }
+    }
+
+    // API lấy dữ liệu cho biểu đồ doanh thu
+    @GetMapping("/chart-data")
+    public ResponseEntity<Map<String, Object>> getChartData(
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        try {
+            // Chuyển đổi từ String sang LocalDate
+            LocalDate start = LocalDate.parse(startDate);
+            LocalDate end = LocalDate.parse(endDate);
+
+            // Chuyển startDate và endDate sang LocalDateTime để tính cả ngày
+            LocalDateTime startDateTime = start.atStartOfDay(); // Từ 00:00:00 của ngày bắt đầu
+            LocalDateTime endDateTime = end.atTime(23, 59, 59); // Đến 23:59:59 của ngày kết thúc
+
+            // Lấy dữ liệu cho biểu đồ (doanh thu theo ngày)
+            List<Object[]> chartData = invoiceService.getChartData(startDateTime, endDateTime);
+
+            // Tạo dữ liệu cho biểu đồ
+            List<String> labels = new ArrayList<>();
+            List<Double> values = new ArrayList<>();
+            for (Object[] data : chartData) {
+                labels.add(data[0].toString());  // Ngày
+                values.add((Double) data[1]);    // Doanh thu
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("labels", labels);
+            response.put("values", values);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
     }
+
+
+
+
+//    @GetMapping("/total-playtime")
+//    public ResponseEntity<Integer> getTotalPlayTime(@RequestParam("date") String dateStr) {
+//        try {
+//            LocalDate date = LocalDate.parse(dateStr);
+//            int totalMinutes = invoiceService.calculateTotalPlayTime(date);
+//            return ResponseEntity.ok(totalMinutes); // Trả về tổng số phút
+//        }catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//
+//    }
+
+    @GetMapping("/total-playtime")
+    public ResponseEntity<Map<String, Integer>> getTotalPlayTime(@RequestParam("startDate") String startDateStr,
+                                                                 @RequestParam("endDate") String endDateStr) {
+        try {
+            // Chuyển đổi từ String sang LocalDateTime
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime startDateTime = LocalDateTime.parse(startDateStr + " 00:00:00", formatter);
+            LocalDateTime endDateTime = LocalDateTime.parse(endDateStr + " 23:59:59", formatter);
+
+            // Gọi service để tính tổng thời gian chơi
+            Integer totalMinutes = invoiceService.calculateTotalPlayTime(startDateTime, endDateTime);
+
+            // Trả về kết quả
+            Map<String, Integer> response = new HashMap<>();
+            response.put("totalMinutes", totalMinutes);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
+
+
+
+
 
 
 
@@ -384,16 +484,42 @@ public class InvoiceController {
         }
     }
 
-    @GetMapping("/total-by-payment-method")
-    public ResponseEntity<List<Map<String, Object>>> getTotalInvoicesByPaymentMethod() {
+
+    @GetMapping("/count-by-payment-method")
+    public ResponseEntity<Map<String, Long>> countInvoicesByPaymentMethod() {
         try {
-            return ResponseEntity.ok(invoiceService.getTotalInvoicesByPaymentMethod());
+            Map<String, Long> stats = invoiceService.countInvoicesByPaymentMethod();
+            return ResponseEntity.ok(stats);
         }catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
 
     }
+
+    @GetMapping("/total-by-payment-method")
+    public ResponseEntity<Map<String, Double>> totalInvoicesByPaymentMethod() {
+        try {
+            Map<String, Double> stats = invoiceService.totalInvoicesByPaymentMethod();
+            return ResponseEntity.ok(stats);
+        }catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
+    }
+
+//    @GetMapping("/total-by-payment-method")
+//    public ResponseEntity<List<PaymentDTO>> getPaymentStats() {
+//        try {
+//            List<PaymentDTO> stats = invoiceService.getPaymentStats();
+//            return ResponseEntity.ok(stats);
+//        }catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//
+//    }
 
 
 

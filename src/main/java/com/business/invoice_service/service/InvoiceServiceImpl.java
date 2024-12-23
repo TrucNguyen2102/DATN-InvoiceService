@@ -268,10 +268,16 @@ public class InvoiceServiceImpl implements InvoiceService{
 //        return totalPlayTime;
 //    }
 
-    public Integer calculateTotalPlayTime(LocalDate date) {
-        Integer totalPlayTime = invoiceRepo.calculateTotalPlayTimeInMinutes(date);
-        return totalPlayTime != null ? totalPlayTime : 0; // Trả về 0 nếu không có dữ liệu
+//    public Integer calculateTotalPlayTime(LocalDate date) {
+//        Integer totalPlayTime = invoiceRepo.calculateTotalPlayTimeInMinutes(date);
+//        return totalPlayTime != null ? totalPlayTime : 0; // Trả về 0 nếu không có dữ liệu
+//    }
+
+    public Integer calculateTotalPlayTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        Integer totalPlayTime = invoiceRepo.calculateTotalPlayTimeInMinutes(startDateTime, endDateTime);
+        return totalPlayTime != null ? totalPlayTime : 0;
     }
+
 
 
 
@@ -631,16 +637,64 @@ public class InvoiceServiceImpl implements InvoiceService{
         }
     }
 
-    public List<Map<String, Object>> getTotalInvoicesByPaymentMethod() {
-        List<Object[]> results = invoiceRepo.getTotalInvoicesByPaymentMethod();
-        List<Map<String, Object>> response = new ArrayList<>();
-        for (Object[] result : results) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("methodId", result[0]);
-            map.put("totalMoney", result[1]);
-            response.add(map);
+//    public List<Map<String, Object>> getTotalInvoicesByPaymentMethod() {
+//        List<Object[]> results = invoiceRepo.getTotalInvoicesByPaymentMethod();
+//        List<Map<String, Object>> response = new ArrayList<>();
+//        for (Object[] result : results) {
+//            Map<String, Object> map = new HashMap<>();
+//            map.put("methodId", result[0]);
+//            map.put("totalMoney", result[1]);
+//            response.add(map);
+//        }
+//        return response;
+//    }
+
+    public Map<String, Long> countInvoicesByPaymentMethod() {
+        List<Object[]> result = invoiceRepo.countInvoicesByPaymentMethod();
+        Map<String, Long> stats = new HashMap<>();
+
+        for (Object[] row : result) {
+            String paymentMethod = (String) row[0];  // Lấy tên phương thức thanh toán
+            Long invoiceCount = (Long) row[1];  // Lấy số lượng hóa đơn (giữ nguyên kiểu Long)
+            stats.put(paymentMethod, invoiceCount);  // Thêm vào map
         }
-        return response;
+
+        return stats;
+    }
+
+
+    public Map<String, Double> totalInvoicesByPaymentMethod() {
+        List<Object[]> result = invoiceRepo.findTotalAmountByPaymentMethod();
+        Map<String, Double> stats = new HashMap<>();
+
+        for (Object[] row : result) {
+            String paymentMethod = (String) row[0];  // Lấy tên phương thức thanh toán
+            Double totalMoney = (Double) row[1];  // Lấy số lượng hóa đơn (giữ nguyên kiểu Long)
+            stats.put(paymentMethod, totalMoney);  // Thêm vào map
+        }
+
+        return stats;
+    }
+
+//    public List<PaymentDTO> getPaymentStats() {
+//        return invoiceRepo.findTotalAmountByPaymentMethod();
+//    }
+
+
+    @Override
+    public double getTotalRevenueInRange(LocalDate startDate, LocalDate endDate) {
+        // Chuyển đổi LocalDate thành LocalDateTime
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(23, 59, 59); // Lúc 23:59:59 của ngày kết thúc
+
+        // Truy vấn tổng doanh thu từ startDate đến endDate
+        return invoiceRepo.calculateRevenueByDateRange(startDateTime, endDateTime);
+    }
+
+
+    // Lấy dữ liệu biểu đồ doanh thu theo ngày
+    public List<Object[]> getChartData(LocalDateTime startDate, LocalDateTime endDate) {
+        return invoiceRepo.calculateChartData(startDate, endDate);
     }
 
 

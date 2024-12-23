@@ -21,6 +21,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/invoices/endpoints").permitAll()
+                        .requestMatchers("/api/invoices/count-by-payment-method").permitAll()
                         .requestMatchers("/api/invoices/total-by-payment-method").permitAll()
                         .requestMatchers("/api/invoices/create").permitAll()
                         .requestMatchers("/api/invoices/update/byBookingId/{bookingId}/endTime").permitAll()
@@ -30,6 +31,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/invoices/update/bill-totalMoney/{bookingId}/{tableId}").permitAll()
                                 .requestMatchers("/api/invoices/update/{id}").permitAll()
                         .requestMatchers("/api/invoices/revenue").permitAll()
+                        .requestMatchers("/api/invoices/revenue/range").permitAll()
                         .requestMatchers("/api/invoices/booking/{bookingId}").permitAll()
                         .requestMatchers("/api/invoices/total-playtime").permitAll()
                         .requestMatchers("/api/invoices/updateEndTimeAndLinkTable/{tableId}").permitAll()
@@ -42,6 +44,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/invoices/payments/all").permitAll()
                         .requestMatchers("/api/invoices/check-table-used/{tableId}").permitAll()
+                        .requestMatchers("/api/invoices/chart-data").permitAll()
 
                         .anyRequest().authenticated()
 
